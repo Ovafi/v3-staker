@@ -1,95 +1,83 @@
-import '@nomiclabs/hardhat-ethers'
-import '@nomiclabs/hardhat-etherscan'
-import '@nomiclabs/hardhat-waffle'
-import '@typechain/hardhat'
-import 'hardhat-contract-sizer'
-import { HardhatUserConfig } from 'hardhat/config'
-import { SolcUserConfig } from 'hardhat/types'
-import 'solidity-coverage'
+import * as dotenv from "dotenv";
+import { HardhatUserConfig } from "hardhat/config";
+import "@nomicfoundation/hardhat-toolbox";
+import "@nomicfoundation/hardhat-ethers";
+import "@nomicfoundation/hardhat-chai-matchers";
+import "@nomicfoundation/hardhat-toolbox/network-helpers";
 
-const DEFAULT_COMPILER_SETTINGS: SolcUserConfig = {
-  version: '0.7.6',
-  settings: {
-    optimizer: {
-      enabled: true,
-      runs: 1_000_000,
-    },
-    metadata: {
-      bytecodeHash: 'none',
-    },
+export const ETH_RPC = "https://rpc.mevblocker.io";
+export const PRIVATE_ETH_RPC_PREFIX = "https://eth-mainnet.g.alchemy.com/v2/";
+export const GOERLI_RPC = "https://goerli.gateway.tenderly.co";
+
+dotenv.config({ path: process.cwd() + "/process.env"});
+
+const testAccounts = [
+  {
+    privateKey: process.env.ADMIN_WALLET_KEY!,
+    balance: "10000000000000000000000000",
   },
-}
-
-if (process.env.RUN_COVERAGE == '1') {
-  /**
-   * Updates the default compiler settings when running coverage.
-   *
-   * See https://github.com/sc-forks/solidity-coverage/issues/417#issuecomment-730526466
-   */
-  console.info('Using coverage compiler settings')
-  DEFAULT_COMPILER_SETTINGS.settings.details = {
-    yul: true,
-    yulDetails: {
-      stackAllocation: true,
-    },
-  }
-}
+  {
+    privateKey: process.env.TEAM_WALLET_KEY!,
+    balance: "10000000000000000000",
+  },
+  {
+    privateKey: process.env.USER_A_WALLET_KEY!,
+    balance: "10000000000000000000",
+  },
+  {
+    privateKey: process.env.USER_B_WALLET_KEY!,
+    balance: "10000000000000000000",
+  },
+  {
+    privateKey: process.env.USER_C_WALLET_KEY!,
+    balance: "10000000000000000000",
+  },
+];
 
 const config: HardhatUserConfig = {
+  solidity: {
+    compilers: [
+      {
+        version: '0.7.6',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1_000_000,
+          },
+          metadata: {
+            bytecodeHash: 'none',
+          },
+        },
+      }
+    ]
+  },
+  defaultNetwork: "localhost",
   networks: {
     hardhat: {
-      allowUnlimitedContractSize: false,
+      forking: {
+        url: PRIVATE_ETH_RPC_PREFIX + process.env.ALCHEMY_KEY!,
+        enabled: true,
+        blockNumber: 19709557,
+      },
+      accounts: testAccounts,
     },
-    mainnet: {
-      url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    },
-    ropsten: {
-      url: `https://ropsten.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    },
-    rinkeby: {
-      url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
+    eth: {
+      url: ETH_RPC,
+      chainId: 0x1,
+      accounts: [process.env.ADMIN_WALLET_KEY!, process.env.TEAM_WALLET_KEY!],
+      gas: "auto",
+      gasPrice: "auto",
+      allowUnlimitedContractSize: true,
     },
     goerli: {
-      url: `https://goerli.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    },
-    kovan: {
-      url: `https://kovan.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    },
-    arbitrumRinkeby: {
-      url: `https://arbitrum-rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    },
-    arbitrum: {
-      url: `https://arbitrum-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    },
-    optimismKovan: {
-      url: `https://optimism-kovan.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    },
-    optimism: {
-      url: `https://optimism-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    },
-    mumbai: {
-      url: `https://polygon-mumbai.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    },
-    polygon: {
-      url: `https://polygon-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    },
+      url: GOERLI_RPC,
+      chainId: 0x5,
+      accounts: [process.env.ADMIN_WALLET_KEY!, process.env.TEAM_WALLET_KEY!],
+      gas: "auto",
+      gasPrice: "auto",
+      allowUnlimitedContractSize: true,
+    }
   },
-  solidity: {
-    compilers: [DEFAULT_COMPILER_SETTINGS],
-  },
-  contractSizer: {
-    alphaSort: false,
-    disambiguatePaths: true,
-    runOnCompile: false,
-  },
-}
+};
 
-if (process.env.ETHERSCAN_API_KEY) {
-  config.etherscan = {
-    // Your API key for Etherscan
-    // Obtain one at https://etherscan.io/
-    apiKey: process.env.ETHERSCAN_API_KEY,
-  }
-}
-
-export default config
+export default config;
